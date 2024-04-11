@@ -81,8 +81,8 @@ const (
 	DuplicatedPingPongServicesMessage = "This rollout uses the same service for the ping and pong services, but two different services are required."
 	// MissedAlbRootServiceMessage indicates that the rollout with ALB TrafficRouting and ping pong feature enabled must have root service provided
 	MissedAlbRootServiceMessage = "Root service field is required for the configuration with ALB and ping-pong feature enabled"
-	// PingPongWithAlbOnlyMessage At this moment ping-pong feature works with the ALB traffic routing only
-	PingPongWithAlbOnlyMessage = "Ping-pong feature works with the ALB traffic routing only"
+	// PingPongWithRouterOnlyMessage At this moment ping-pong feature works with the ALB traffic routing only
+	PingPongWithRouterOnlyMessage = "Ping-pong feature works with the ALB and Istio traffic routers only"
 	// InvalideStepRouteNameNotFoundInManagedRoutes A step has been configured that requires managedRoutes and the route name
 	// is missing from managedRoutes
 	InvalideStepRouteNameNotFoundInManagedRoutes = "Steps define a route that does not exist in spec.strategy.canary.trafficRouting.managedRoutes"
@@ -94,10 +94,8 @@ const (
 // NOTE: this variable may need to be updated whenever we update our k8s libraries as new options
 // are introduced or removed.
 var allowAllPodValidationOptions = apivalidation.PodValidationOptions{
-	AllowDownwardAPIHugePages:       true,
 	AllowInvalidPodDeletionCost:     true,
 	AllowIndivisibleHugePagesValues: true,
-	AllowExpandedDNSConfig:          true,
 }
 
 func ValidateRollout(rollout *v1alpha1.Rollout) field.ErrorList {
@@ -163,7 +161,7 @@ func ValidateRolloutSpec(rollout *v1alpha1.Rollout, fldPath *field.Path) field.E
 
 		// Skip validating empty template for rollout resolved from ref
 		if rollout.Spec.TemplateResolvedFromRef || spec.WorkloadRef == nil {
-			allErrs = append(allErrs, validation.ValidatePodTemplateSpecForReplicaSet(&template, selector, replicas, fldPath.Child("template"), allowAllPodValidationOptions)...)
+			allErrs = append(allErrs, validation.ValidatePodTemplateSpecForReplicaSet(&template, nil, selector, replicas, fldPath.Child("template"), allowAllPodValidationOptions)...)
 		}
 	}
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(spec.MinReadySeconds), fldPath.Child("minReadySeconds"))...)
@@ -241,7 +239,7 @@ func requireCanaryStableServices(rollout *v1alpha1.Rollout) bool {
 
 	switch {
 	case canary.TrafficRouting.ALB != nil && canary.PingPong == nil,
-		canary.TrafficRouting.Istio != nil && canary.TrafficRouting.Istio.DestinationRule == nil,
+		canary.TrafficRouting.Istio != nil && canary.TrafficRouting.Istio.DestinationRule == nil && canary.PingPong == nil,
 		canary.TrafficRouting.SMI != nil,
 		canary.TrafficRouting.Apisix != nil,
 		canary.TrafficRouting.Ambassador != nil,
@@ -262,8 +260,8 @@ func ValidateRolloutStrategyCanary(rollout *v1alpha1.Rollout, fldPath *field.Pat
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("stableService"), canary.StableService, DuplicatedServicesCanaryMessage))
 	}
 	if canary.PingPong != nil {
-		if canary.TrafficRouting != nil && canary.TrafficRouting.ALB == nil {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("trafficRouting").Child("alb"), canary.TrafficRouting.ALB, PingPongWithAlbOnlyMessage))
+		if canary.TrafficRouting != nil && canary.TrafficRouting.ALB == nil && canary.TrafficRouting.Istio == nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("trafficRouting").Child("alb"), canary.TrafficRouting.ALB, PingPongWithRouterOnlyMessage))
 		}
 		if canary.PingPong.PingService == "" {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("pingPong").Child("pingService"), canary.PingPong.PingService, InvalidPingPongProvidedMessage))
