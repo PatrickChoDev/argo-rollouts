@@ -133,9 +133,9 @@ func TestSyncCanaryEphemeralMetadataSecondRevision(t *testing.T) {
 
 	f.expectUpdateRolloutStatusAction(r2)         // Update Rollout conditions
 	rs2idx := f.expectCreateReplicaSetAction(rs2) // Create revision 2 ReplicaSet
+	rs1idx := f.expectUpdateReplicaSetAction(rs1) // update stable replicaset with stable metadata
 	f.expectListPodAction(r1.Namespace)           // list pods to patch ephemeral data on revision 1 ReplicaSets pods
 	podIdx := f.expectUpdatePodAction(&pod)       // Update pod with ephemeral data
-	rs1idx := f.expectUpdateReplicaSetAction(rs1) // update stable replicaset with stable metadata
 	f.expectUpdateReplicaSetAction(rs1)           // scale revision 1 ReplicaSet down
 	f.expectPatchRolloutAction(r2)                // Patch Rollout status
 
@@ -169,7 +169,7 @@ func TestSyncBlueGreenEphemeralMetadataSecondRevision(t *testing.T) {
 	f := newFixture(t)
 	defer f.Close()
 
-	r1 := newBlueGreenRollout("foo", 1, nil, "active", "preview")
+	r1 := newBlueGreenRollout("foo", 3, nil, "active", "preview")
 	r1.Spec.Strategy.BlueGreen.AutoPromotionEnabled = pointer.BoolPtr(false)
 	r1.Annotations[annotations.RevisionAnnotation] = "1"
 	r1.Spec.Strategy.BlueGreen.PreviewMetadata = &v1alpha1.PodTemplateMetadata{
@@ -213,9 +213,9 @@ func TestSyncBlueGreenEphemeralMetadataSecondRevision(t *testing.T) {
 	rs2idx := f.expectCreateReplicaSetAction(rs2)      // Create revision 2 ReplicaSet
 	f.expectPatchServiceAction(previewSvc, rs2PodHash) // Update preview service to point at revision 2 replicaset
 	f.expectUpdateReplicaSetAction(rs2)                // scale revision 2 ReplicaSet up
+	rs1idx := f.expectUpdateReplicaSetAction(rs1)      // update stable replicaset with stable metadata
 	f.expectListPodAction(r1.Namespace)                // list pods to patch ephemeral data on revision 1 ReplicaSets pods`
 	podIdx := f.expectUpdatePodAction(&pod)            // Update pod with ephemeral data
-	rs1idx := f.expectUpdateReplicaSetAction(rs1)      // update stable replicaset with stable metadata
 	f.expectPatchRolloutAction(r2)                     // Patch Rollout status
 
 	f.run(getKey(r2, t))

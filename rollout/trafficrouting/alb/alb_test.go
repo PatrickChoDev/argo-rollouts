@@ -3,6 +3,7 @@ package alb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -668,7 +669,7 @@ func TestErrorPatching(t *testing.T) {
 
 	errMessage := "some error occurred"
 	r.cfg.Client.(*fake.Clientset).Fake.AddReactor("patch", "ingresses", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, fmt.Errorf(errMessage)
+		return true, nil, errors.New(errMessage)
 	})
 
 	err = r.SetWeight(10)
@@ -700,7 +701,7 @@ func TestErrorPatchingMultiIngress(t *testing.T) {
 
 	errMessage := "some error occurred"
 	r.cfg.Client.(*fake.Clientset).Fake.AddReactor("patch", "ingresses", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, fmt.Errorf(errMessage)
+		return true, nil, errors.New(errMessage)
 	})
 
 	err = r.SetWeight(10)
@@ -918,6 +919,7 @@ func TestVerifyWeight(t *testing.T) {
 	{
 		var status v1alpha1.RolloutStatus
 		r, fakeClient := newFakeReconciler(&status)
+
 		fakeClient.loadBalancers = []*elbv2types.LoadBalancer{
 			{
 				LoadBalancerName: pointer.StringPtr("lb-abc123-name"),
@@ -949,6 +951,48 @@ func TestVerifyWeight(t *testing.T) {
 		}
 
 		weightVerified, err := r.VerifyWeight(10)
+		assert.NoError(t, err)
+		assert.True(t, *weightVerified)
+		assert.Equal(t, status.ALBs[0], *status.ALB)
+		assert.Equal(t, *status.ALB, *fakeClient.getAlbStatus("ingress"))
+	}
+
+	// LoadBalancer found, at max weight, end of rollout
+	{
+		var status v1alpha1.RolloutStatus
+		status.CurrentStepIndex = pointer.Int32Ptr(2)
+		r, fakeClient := newFakeReconciler(&status)
+		fakeClient.loadBalancers = []*elbv2types.LoadBalancer{
+			{
+				LoadBalancerName: pointer.StringPtr("lb-abc123-name"),
+				LoadBalancerArn:  pointer.StringPtr("arn:aws:elasticloadbalancing:us-east-2:123456789012:loadbalancer/app/lb-abc123-name/1234567890123456"),
+				DNSName:          pointer.StringPtr("verify-weight-test-abc-123.us-west-2.elb.amazonaws.com"),
+			},
+		}
+		fakeClient.targetGroups = []aws.TargetGroupMeta{
+			{
+				TargetGroup: elbv2types.TargetGroup{
+					TargetGroupName: pointer.StringPtr("canary-tg-abc123-name"),
+					TargetGroupArn:  pointer.StringPtr("arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/canary-tg-abc123-name/1234567890123456"),
+				},
+				Weight: pointer.Int32Ptr(100),
+				Tags: map[string]string{
+					aws.AWSLoadBalancerV2TagKeyResourceID: "default/ingress-canary-svc:443",
+				},
+			},
+			{
+				TargetGroup: elbv2types.TargetGroup{
+					TargetGroupName: pointer.StringPtr("stable-tg-abc123-name"),
+					TargetGroupArn:  pointer.StringPtr("arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/stable-tg-abc123-name/1234567890123456"),
+				},
+				Weight: pointer.Int32Ptr(0),
+				Tags: map[string]string{
+					aws.AWSLoadBalancerV2TagKeyResourceID: "default/ingress-stable-svc:443",
+				},
+			},
+		}
+
+		weightVerified, err := r.VerifyWeight(100)
 		assert.NoError(t, err)
 		assert.True(t, *weightVerified)
 		assert.Equal(t, status.ALBs[0], *status.ALB)

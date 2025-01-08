@@ -99,6 +99,11 @@ spec:
                       - type: integer
                       - type: string
                       x-kubernetes-int-or-string: true
+                    consecutiveSuccessLimit:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
                     count:
                       anyOf:
                       - type: integer
@@ -180,7 +185,6 @@ spec:
                         datadog:
                           properties:
                             aggregator:
-                              default: last
                               enum:
                               - avg
                               - min
@@ -209,6 +213,13 @@ spec:
                               type: object
                             query:
                               type: string
+                            secretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespaced:
+                                  type: boolean
+                              type: object
                           type: object
                         graphite:
                           properties:
@@ -3017,6 +3028,9 @@ spec:
                               type: string
                             query:
                               type: string
+                            timeout:
+                              format: int64
+                              type: integer
                           required:
                           - query
                           type: object
@@ -3068,6 +3082,15 @@ spec:
                               type: boolean
                             query:
                               type: string
+                            rangeQuery:
+                              properties:
+                                end:
+                                  type: string
+                                start:
+                                  type: string
+                                step:
+                                  type: string
+                              type: object
                             timeout:
                               format: int64
                               type: integer
@@ -3200,6 +3223,9 @@ spec:
                 items:
                   properties:
                     consecutiveError:
+                      format: int32
+                      type: integer
+                    consecutiveSuccess:
                       format: int32
                       type: integer
                     count:
@@ -3389,6 +3415,11 @@ spec:
                       - type: integer
                       - type: string
                       x-kubernetes-int-or-string: true
+                    consecutiveSuccessLimit:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
                     count:
                       anyOf:
                       - type: integer
@@ -3470,7 +3501,6 @@ spec:
                         datadog:
                           properties:
                             aggregator:
-                              default: last
                               enum:
                               - avg
                               - min
@@ -3499,6 +3529,13 @@ spec:
                               type: object
                             query:
                               type: string
+                            secretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespaced:
+                                  type: boolean
+                              type: object
                           type: object
                         graphite:
                           properties:
@@ -6307,6 +6344,9 @@ spec:
                               type: string
                             query:
                               type: string
+                            timeout:
+                              format: int64
+                              type: integer
                           required:
                           - query
                           type: object
@@ -6358,6 +6398,15 @@ spec:
                               type: boolean
                             query:
                               type: string
+                            rangeQuery:
+                              properties:
+                                end:
+                                  type: string
+                                start:
+                                  type: string
+                                step:
+                                  type: string
+                              type: object
                             timeout:
                               format: int64
                               type: integer
@@ -6557,6 +6606,11 @@ spec:
                       - type: integer
                       - type: string
                       x-kubernetes-int-or-string: true
+                    consecutiveSuccessLimit:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
                     count:
                       anyOf:
                       - type: integer
@@ -6638,7 +6692,6 @@ spec:
                         datadog:
                           properties:
                             aggregator:
-                              default: last
                               enum:
                               - avg
                               - min
@@ -6667,6 +6720,13 @@ spec:
                               type: object
                             query:
                               type: string
+                            secretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespaced:
+                                  type: boolean
+                              type: object
                           type: object
                         graphite:
                           properties:
@@ -9475,6 +9535,9 @@ spec:
                               type: string
                             query:
                               type: string
+                            timeout:
+                              format: int64
+                              type: integer
                           required:
                           - query
                           type: object
@@ -9526,6 +9589,15 @@ spec:
                               type: boolean
                             query:
                               type: string
+                            rangeQuery:
+                              properties:
+                                end:
+                                  type: string
+                                start:
+                                  type: string
+                                step:
+                                  type: string
+                              type: object
                             timeout:
                               format: int64
                               type: integer
@@ -13152,6 +13224,16 @@ spec:
                                   - type: string
                                   x-kubernetes-int-or-string: true
                               type: object
+                            plugin:
+                              properties:
+                                config:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                name:
+                                  type: string
+                              required:
+                              - name
+                              type: object
                             setCanaryScale:
                               properties:
                                 matchTrafficWeight:
@@ -13424,6 +13506,10 @@ spec:
                                 type: object
                               annotationPrefix:
                                 type: string
+                              canaryIngressAnnotations:
+                                additionalProperties:
+                                  type: string
+                                type: object
                               stableIngress:
                                 type: string
                               stableIngresses:
@@ -16207,6 +16293,45 @@ spec:
                     type: object
                   stablePingPong:
                     type: string
+                  stepPluginStatuses:
+                    items:
+                      properties:
+                        backoff:
+                          type: string
+                        disabled:
+                          type: boolean
+                        executions:
+                          format: int32
+                          type: integer
+                        finishedAt:
+                          format: date-time
+                          type: string
+                        index:
+                          format: int32
+                          type: integer
+                        message:
+                          type: string
+                        name:
+                          type: string
+                        operation:
+                          type: string
+                        phase:
+                          type: string
+                        startedAt:
+                          format: date-time
+                          type: string
+                        status:
+                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
+                        updatedAt:
+                          format: date-time
+                          type: string
+                      required:
+                      - index
+                      - name
+                      - operation
+                      type: object
+                    type: array
                   weights:
                     properties:
                       additional:
@@ -16420,6 +16545,7 @@ rules:
   - get
   - list
   - watch
+  - update
 - apiGroups:
   - ""
   resources:
@@ -16757,6 +16883,9 @@ spec:
           periodSeconds: 5
           successThreshold: 1
           timeoutSeconds: 4
+        resources:
+          limits:
+            ephemeral-storage: 1Gi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -16765,6 +16894,16 @@ spec:
           readOnlyRootFilesystem: true
           seccompProfile:
             type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /home/argo-rollouts/plugin-bin
+          name: plugin-bin
+        - mountPath: /tmp
+          name: tmp
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo-rollouts
+      volumes:
+      - emptyDir: {}
+        name: plugin-bin
+      - emptyDir: {}
+        name: tmp
